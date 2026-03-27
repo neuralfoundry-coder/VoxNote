@@ -1,0 +1,73 @@
+# ── Rust ────────────────────────────────────────────
+/target/
+**/*.rs.bk
+Cargo.lock
+# Keep Cargo.lock for applications (not libraries)
+!Cargo.lock
+
+# ── Node / Frontend ─────────────────────────────────
+node_modules/
+frontend/dist/
+frontend/.vite/
+*.tsbuildinfo
+
+# ── Tauri ───────────────────────────────────────────
+/crates/voxnote-tauri/gen/
+/crates/voxnote-tauri/mobile-plugins/android/.gradle/
+/crates/voxnote-tauri/mobile-plugins/android/build/
+/crates/voxnote-tauri/mobile-plugins/ios/build/
+
+# ── AI Models (large binary files) ──────────────────
+*.bin
+*.gguf
+*.onnx
+*.pt
+*.safetensors
+~/.voxnote/models/
+
+# ── VoxNote Runtime Data ────────────────────────────
+.voxnote/
+
+# ── OS ──────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~
+
+# ── IDE ─────────────────────────────────────────────
+.idea/
+.vscode/
+*.iml
+.fleet/
+
+# ── Environment / Secrets ──────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+
+# ── Test / Coverage ─────────────────────────────────
+coverage/
+test-results/
+*.profraw
+lcov.info
+tarpaulin-report.html
+
+# ── Build Artifacts ─────────────────────────────────
+*.dmg
+*.msi
+*.exe
+*.AppImage
+*.deb
+*.rpm
+*.ipa
+*.apk
+*.aab
+
+# ── Misc ────────────────────────────────────────────
+*.log
+*.partial

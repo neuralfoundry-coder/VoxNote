@@ -1,0 +1,98 @@
+# VoxNote Model Registry
+# 모델 메타데이터 — 다운로드 URL, 해시, 요구사항 정의
+
+# ── STT Models (whisper.cpp GGML) ───────────────────────────────
+
+[[model]]
+id = "whisper-tiny-q8"
+name = "Whisper Tiny (Q8_0)"
+type = "stt"
+size_bytes = 78000000
+quantization = "Q8_0"
+languages = ["auto", "ko", "en", "ja", "zh"]
+min_ram_mb = 512
+gpu_recommended = false
+download_url = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin"
+sha256 = "be07e048e1e599ad46341c8d2a135645097a538221678b7acdd1b1919c6e1b21"
+description = "가장 가벼운 Whisper 모델 (40MB). CPU에서도 빠르게 동작."
+
+[[model]]
+id = "whisper-base-q8"
+name = "Whisper Base (Q8_0)"
+type = "stt"
+size_bytes = 148000000
+quantization = "Q8_0"
+languages = ["auto", "ko", "en", "ja", "zh", "es", "fr", "de"]
+min_ram_mb = 1024
+gpu_recommended = false
+download_url = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin"
+sha256 = "60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe"
+description = "기본 Whisper 모델. Tiny 대비 정확도 개선."
+
+[[model]]
+id = "whisper-small-q8"
+name = "Whisper Small (Q8_0)"
+type = "stt"
+size_bytes = 488000000
+quantization = "Q8_0"
+languages = ["auto", "ko", "en", "ja", "zh", "es", "fr", "de"]
+min_ram_mb = 2048
+gpu_recommended = true
+download_url = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin"
+sha256 = "1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1571c230d4"
+description = "중간 크기 Whisper 모델. 정확도와 속도의 균형."
+
+[[model]]
+id = "whisper-large-v3-turbo-q5"
+name = "Whisper Large V3 Turbo (Q5_0)"
+type = "stt"
+size_bytes = 891289600
+quantization = "Q5_0"
+languages = ["auto", "ko", "en", "ja", "zh", "es", "fr", "de", "pt", "ru", "ar"]
+min_ram_mb = 3072
+gpu_recommended = true
+download_url = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q5_0.bin"
+sha256 = "placeholder-sha256-large-v3-turbo"
+description = "최고 정확도 Whisper 모델. GPU 권장."
+
+# ── LLM Models (Phase 2 활용) ──────────────────────────────────
+
+[[model]]
+id = "qwen2.5-7b-q4km"
+name = "Qwen 2.5 7B (Q4_K_M)"
+type = "llm"
+size_bytes = 4368000000
+quantization = "Q4_K_M"
+languages = ["ko", "en", "ja", "zh"]
+min_ram_mb = 8192
+gpu_recommended = true
+download_url = "https://huggingface.co/Qwen/Qwen2.5-7B-Instruct-GGUF/resolve/main/qwen2.5-7b-instruct-q4_k_m.gguf"
+sha256 = "placeholder-sha256-qwen25-7b"
+description = "다국어 지원 7B LLM. 회의록 요약에 최적화 가능."
+
+[[model]]
+id = "qwen2.5-1.5b-q4km"
+name = "Qwen 2.5 1.5B (Q4_K_M)"
+type = "llm"
+size_bytes = 1100000000
+quantization = "Q4_K_M"
+languages = ["ko", "en", "ja", "zh"]
+min_ram_mb = 2048
+gpu_recommended = false
+download_url = "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf"
+sha256 = "placeholder-sha256-qwen25-1.5b"
+description = "경량 LLM. 모바일 및 CPU 환경용."
+
+# ── Diarization Models (Phase 2 활용) ──────────────────────────
+
+[[model]]
+id = "ecapa-tdnn-voxceleb"
+name = "ECAPA-TDNN (VoxCeleb)"
+type = "diarization"
+size_bytes = 18600000
+languages = []
+min_ram_mb = 512
+gpu_recommended = false
+download_url = "https://huggingface.co/speechbrain/spkrec-ecapa-voxceleb/resolve/main/embedding_model.onnx"
+sha256 = "placeholder-sha256-ecapa-tdnn"
+description = "화자 임베딩 추출 모델 (192차원)."

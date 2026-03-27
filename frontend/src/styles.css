@@ -1,0 +1,221 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════════════
+   VoxNote — Liquid Glass Business Design System
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── CSS Custom Properties ─────────────────────────────────── */
+:root {
+  /* Brand */
+  --vn-primary: #6366f1;
+  --vn-primary-light: #818cf8;
+  --vn-primary-dark: #4f46e5;
+  --vn-accent: #06b6d4;
+  --vn-accent-warm: #f59e0b;
+
+  /* Light Theme */
+  --vn-bg-base: #f8fafc;
+  --vn-bg-surface: rgba(255, 255, 255, 0.72);
+  --vn-bg-elevated: rgba(255, 255, 255, 0.88);
+  --vn-bg-glass: rgba(255, 255, 255, 0.45);
+  --vn-border: rgba(0, 0, 0, 0.06);
+  --vn-border-glass: rgba(255, 255, 255, 0.5);
+  --vn-text-primary: #0f172a;
+  --vn-text-secondary: #475569;
+  --vn-text-tertiary: #94a3b8;
+  --vn-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  --vn-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.06), 0 2px 6px rgba(0, 0, 0, 0.03);
+  --vn-shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
+  --vn-shadow-glow: 0 0 20px rgba(99, 102, 241, 0.15);
+  --vn-glass-blur: 20px;
+  --vn-radius: 16px;
+  --vn-radius-sm: 10px;
+  --vn-radius-xs: 6px;
+
+  /* Gradient mesh background */
+  --vn-mesh-1: radial-gradient(ellipse at 20% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 50%);
+  --vn-mesh-2: radial-gradient(ellipse at 80% 80%, rgba(6, 182, 212, 0.06) 0%, transparent 50%);
+  --vn-mesh-3: radial-gradient(ellipse at 50% 50%, rgba(245, 158, 11, 0.04) 0%, transparent 60%);
+}
+
+.dark {
+  --vn-bg-base: #0a0e1a;
+  --vn-bg-surface: rgba(15, 23, 42, 0.75);
+  --vn-bg-elevated: rgba(30, 41, 59, 0.8);
+  --vn-bg-glass: rgba(15, 23, 42, 0.5);
+  --vn-border: rgba(255, 255, 255, 0.06);
+  --vn-border-glass: rgba(255, 255, 255, 0.08);
+  --vn-text-primary: #f1f5f9;
+  --vn-text-secondary: #94a3b8;
+  --vn-text-tertiary: #475569;
+  --vn-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
+  --vn-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.3);
+  --vn-shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.4);
+  --vn-shadow-glow: 0 0 30px rgba(99, 102, 241, 0.2);
+  --vn-mesh-1: radial-gradient(ellipse at 20% 20%, rgba(99, 102, 241, 0.12) 0%, transparent 50%);
+  --vn-mesh-2: radial-gradient(ellipse at 80% 80%, rgba(6, 182, 212, 0.08) 0%, transparent 50%);
+  --vn-mesh-3: radial-gradient(ellipse at 50% 50%, rgba(245, 158, 11, 0.05) 0%, transparent 60%);
+}
+
+/* ── Base ──────────────────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--vn-bg-base);
+  color: var(--vn-text-primary);
+}
+
+#root {
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+/* ── Liquid Glass Effects ──────────────────────────────────── */
+.glass {
+  background: var(--vn-bg-glass);
+  backdrop-filter: blur(var(--vn-glass-blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--vn-glass-blur)) saturate(180%);
+  border: 1px solid var(--vn-border-glass);
+}
+
+.glass-surface {
+  background: var(--vn-bg-surface);
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  border: 1px solid var(--vn-border);
+}
+
+.glass-elevated {
+  background: var(--vn-bg-elevated);
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  border: 1px solid var(--vn-border-glass);
+  box-shadow: var(--vn-shadow-md);
+}
+
+/* ── Mesh Gradient Background ──────────────────────────────── */
+.mesh-bg {
+  background:
+    var(--vn-mesh-1),
+    var(--vn-mesh-2),
+    var(--vn-mesh-3),
+    var(--vn-bg-base);
+}
+
+/* ── Recording Pulse Animation ─────────────────────────────── */
+@keyframes pulse-ring {
+  0% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.15); opacity: 0.4; }
+  100% { transform: scale(1); opacity: 0.8; }
+}
+
+@keyframes wave {
+  0%, 100% { height: 4px; }
+  50% { height: 20px; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes float-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(99, 102, 241, 0.2); }
+  50% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.4); }
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 2s ease-in-out infinite;
+}
+
+.animate-float-in {
+  animation: float-in 0.4s ease-out;
+}
+
+.animate-glow {
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent 30%, rgba(99, 102, 241, 0.08) 50%, transparent 70%);
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+}
+
+/* ── Waveform Bars ─────────────────────────────────────────── */
+.wave-bar {
+  width: 3px;
+  border-radius: 2px;
+  background: var(--vn-primary);
+  animation: wave 1.2s ease-in-out infinite;
+}
+.wave-bar:nth-child(1) { animation-delay: 0s; }
+.wave-bar:nth-child(2) { animation-delay: 0.15s; }
+.wave-bar:nth-child(3) { animation-delay: 0.3s; }
+.wave-bar:nth-child(4) { animation-delay: 0.45s; }
+.wave-bar:nth-child(5) { animation-delay: 0.6s; }
+.wave-bar:nth-child(6) { animation-delay: 0.3s; }
+.wave-bar:nth-child(7) { animation-delay: 0.15s; }
+
+/* ── Scrollbar ─────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--vn-text-tertiary);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--vn-text-secondary);
+}
+
+/* ── Selection ─────────────────────────────────────────────── */
+::selection {
+  background: rgba(99, 102, 241, 0.2);
+  color: inherit;
+}
+
+/* ── Transitions ───────────────────────────────────────────── */
+.transition-glass {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Hover Utilities ───────────────────────────────────────── */
+.hover-glass:hover {
+  background: var(--vn-bg-glass) !important;
+}
+.hover-elevated:hover {
+  background: var(--vn-bg-elevated) !important;
+}
+
+/* ── Modal Overlay ─────────────────────────────────────────── */
+.modal-overlay {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* ── Drag region for Tauri window ──────────────────────────── */
+.drag-region {
+  -webkit-app-region: drag;
+}
+.no-drag {
+  -webkit-app-region: no-drag;
+}

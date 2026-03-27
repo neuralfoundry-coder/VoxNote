@@ -1,0 +1,17 @@
+[package]
+name = "voxnote-wasm"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "VoxNote WebAssembly target"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+voxnote-core = { workspace = true }
+wasm-bindgen = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde-wasm-bindgen = "0.6"

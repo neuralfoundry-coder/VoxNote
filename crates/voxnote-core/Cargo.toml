@@ -1,0 +1,89 @@
+[package]
+name = "voxnote-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "VoxNote core engine — audio, STT, LLM, storage, model management"
+
+[features]
+default = ["stt", "desktop"]
+
+# AI 기능
+stt = ["dep:whisper-rs"]
+llm = []
+tts = ["dep:ort"]
+diarize = ["dep:ort"]
+
+# GPU 가속
+metal = ["whisper-rs?/metal"]
+cuda = ["whisper-rs?/cuda"]
+vulkan = []
+
+# 플랫폼
+desktop = ["dep:cpal"]
+mobile = []
+wasm = ["dep:wasm-bindgen"]
+
+# 네트워크
+sync = ["dep:yrs", "dep:tokio-tungstenite"]
+cloud-providers = ["dep:reqwest"]
+
+[dependencies]
+# 직렬화
+serde = { workspace = true }
+serde_json = { workspace = true }
+toml = { workspace = true }
+
+# 비동기
+tokio = { workspace = true }
+async-trait = { workspace = true }
+
+# 에러
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# 로깅
+tracing = { workspace = true }
+
+# 유틸리티
+uuid = { workspace = true }
+chrono = { workspace = true }
+crossbeam = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+futures-util = { workspace = true }
+dirs = { workspace = true }
+
+# 암호화
+chacha20poly1305 = { workspace = true }
+argon2 = { workspace = true }
+secrecy = { workspace = true }
+zeroize = { workspace = true }
+
+# 저장소
+rusqlite = { workspace = true }
+
+# 오디오 (feature-gated)
+cpal = { workspace = true, optional = true }
+rubato = { workspace = true }
+
+# STT (feature-gated)
+whisper-rs = { workspace = true, optional = true }
+
+# ONNX Runtime (feature-gated: tts, diarize)
+ort = { workspace = true, optional = true }
+
+# CRDT (feature-gated)
+yrs = { workspace = true, optional = true }
+tokio-tungstenite = { workspace = true, optional = true }
+
+# HTTP (feature-gated)
+reqwest = { workspace = true, optional = true }
+
+# WASM (feature-gated)
+wasm-bindgen = { workspace = true, optional = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util"] }
+tempfile = "3"
