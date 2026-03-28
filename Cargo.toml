@@ -53,7 +53,7 @@ anyhow = "1"
 
 # 로깅
 tracing = "0.1"
-tracing-subscriber = "0.3"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # HTTP 클라이언트
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "stream"] }
