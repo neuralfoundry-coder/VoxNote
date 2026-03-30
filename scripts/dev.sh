@@ -55,7 +55,39 @@ echo -e " Rust 변경 = 자동 재컴파일"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
-# cargo tauri dev:
-#   1. beforeDevCommand → pnpm dev (Vite HMR 서버, 프론트 변경 즉시 반영)
-#   2. Rust 소스 파일 감시 → 변경 시 자동 재컴파일 + 앱 재시작
+# 0. 기존 포트 점유 프로세스 정리
+cleanup_port() {
+    local port=$1
+    local pids
+    pids=$(lsof -ti :"$port" 2>/dev/null || true)
+    if [ -n "$pids" ]; then
+        echo -e "${YELLOW} Port $port 점유 프로세스 종료 중... (PID: $pids)${NC}"
+        echo "$pids" | xargs kill -9 2>/dev/null || true
+        sleep 1
+    fi
+}
+
+cleanup_port 1420
+
+# 종료 시 모든 자식 프로세스 정리
+cleanup() {
+    echo ""
+    echo -e "${YELLOW} Shutting down...${NC}"
+    kill $VITE_PID 2>/dev/null
+    cleanup_port 1420
+    wait 2>/dev/null
+}
+trap cleanup EXIT INT TERM
+
+# 1. Frontend dev server 시작 (백그라운드)
+echo -e " Starting Vite dev server..."
+cd frontend && pnpm dev &
+VITE_PID=$!
+cd ..
+
+# Vite 서버 준비 대기
+sleep 2
+
+# 2. Tauri dev 실행 (Rust 자동 재컴파일)
+echo -e " Starting Tauri dev..."
 cargo tauri dev

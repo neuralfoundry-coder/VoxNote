@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use tokio::sync::mpsc;
 use tracing::{debug, info, warn};
 
@@ -6,6 +7,7 @@ use crate::audio::resample::Resampler;
 use crate::audio::vad::{EnergyVad, VoiceActivityDetector};
 use crate::config::AppConfig;
 use crate::models::Segment;
+use crate::stt::SttProvider;
 
 /// 파이프라인 이벤트 — Tauri 이벤트로 변환
 #[derive(Debug, Clone, serde::Serialize)]
@@ -25,11 +27,72 @@ pub enum PipelineEvent {
 pub struct TranscriptionPipeline {
     config: AppConfig,
     event_tx: mpsc::UnboundedSender<PipelineEvent>,
+    stt_provider: Option<Arc<dyn SttProvider>>,
 }
 
 impl TranscriptionPipeline {
-    pub fn new(config: AppConfig, event_tx: mpsc::UnboundedSender<PipelineEvent>) -> Self {
-        Self { config, event_tx }
+    pub fn new(
+        config: AppConfig,
+        event_tx: mpsc::UnboundedSender<PipelineEvent>,
+        stt_provider: Option<Arc<dyn SttProvider>>,
+    ) -> Self {
+        Self {
+            config,
+            event_tx,
+            stt_provider,
+        }
+    }
+
+    /// SttProvider를 통해 실제 전사를 수행하고 세그먼트를 emit
+    async fn transcribe_chunk(
+        &self,
+        chunk: crate::audio::AudioChunk,
+        note_id: &str,
+    ) {
+        let Some(provider) = &self.stt_provider else {
+            // Provider 없으면 placeholder emit
+            let _ = self.event_tx.send(PipelineEvent::Segment(
+                Segment::new(
+                    note_id,
+                    &format!("[audio chunk: {:.1}s]", chunk.duration_secs()),
+                    chunk.timestamp_ms,
+                    chunk.timestamp_ms + (chunk.duration_secs() * 1000.0) as i64,
+                ),
+            ));
+            return;
+        };
+
+        // whisper 전사 실행 (동기 블로킹 — current_thread runtime에서 직접 호출)
+        match provider.transcribe(&chunk, note_id).await {
+            Ok(segments) => {
+                // 문맥 연속성: 마지막 세그먼트 텍스트를 initial_prompt로 설정
+                if !segments.is_empty() {
+                    let context: String = segments
+                        .iter()
+                        .rev()
+                        .take(3)
+                        .map(|s| s.text.as_str())
+                        .collect::<Vec<_>>()
+                        .into_iter()
+                        .rev()
+                        .collect::<Vec<_>>()
+                        .join(" ");
+                    if let Some(ref p) = self.stt_provider {
+                        p.set_initial_prompt(&context);
+                    }
+                }
+
+                for segment in segments {
+                    let _ = self.event_tx.send(PipelineEvent::Segment(segment));
+                }
+            }
+            Err(e) => {
+                warn!("STT transcription error: {}", e);
+                let _ = self.event_tx.send(PipelineEvent::Error {
+                    message: format!("STT error: {}", e),
+                });
+            }
+        }
     }
 
     /// 처리 루프 실행 (별도 태스크에서 호출)
@@ -62,17 +125,22 @@ impl TranscriptionPipeline {
         );
 
         let vad_frame_size = 480; // 30ms at 16kHz
-        info!("Processing loop started for note {}", note_id);
+        info!(
+            "Processing loop started for note {} (STT: {})",
+            note_id,
+            self.stt_provider
+                .as_ref()
+                .map(|p| p.name())
+                .unwrap_or("none")
+        );
 
         loop {
             tokio::select! {
                 _ = shutdown_rx.changed() => {
                     if *shutdown_rx.borrow() {
-                        // 잔여 버퍼 플러시
+                        // 잔여 버퍼 플러시 → STT 전사
                         if let Some(chunk) = accumulator.flush() {
-                            let _ = self.event_tx.send(PipelineEvent::Segment(
-                                Segment::new(&note_id, "[flush]", chunk.timestamp_ms, chunk.timestamp_ms),
-                            ));
+                            self.transcribe_chunk(chunk, &note_id).await;
                         }
                         info!("Processing loop stopped for note {}", note_id);
                         break;
@@ -122,16 +190,8 @@ impl TranscriptionPipeline {
                             chunk.timestamp_ms
                         );
 
-                        // STT 전사는 여기서 SttProvider를 호출
-                        // Phase 1에서는 이벤트로 청크 정보를 전달
-                        let _ = self.event_tx.send(PipelineEvent::Segment(
-                            Segment::new(
-                                &note_id,
-                                &format!("[audio chunk: {:.1}s]", chunk.duration_secs()),
-                                chunk.timestamp_ms,
-                                chunk.timestamp_ms + (chunk.duration_secs() * 1000.0) as i64,
-                            ),
-                        ));
+                        // STT 전사 실행
+                        self.transcribe_chunk(chunk, &note_id).await;
                     }
                 }
             }

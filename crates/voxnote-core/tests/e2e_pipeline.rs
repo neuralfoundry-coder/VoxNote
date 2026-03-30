@@ -173,7 +173,7 @@ fn e2e_003_full_audio_chain() {
 async fn e2e_004_pipeline_emits_events() {
     let config = AppConfig::default();
     let (event_tx, mut event_rx) = mpsc::unbounded_channel::<PipelineEvent>();
-    let pipeline = TranscriptionPipeline::new(config, event_tx);
+    let pipeline = TranscriptionPipeline::new(config, event_tx, None);
 
     let buf = AudioRingBuffer::new(200);
     let producer = buf.producer();
@@ -237,7 +237,7 @@ async fn e2e_004_pipeline_emits_events() {
 async fn e2e_005_pipeline_graceful_shutdown() {
     let config = AppConfig::default();
     let (event_tx, _event_rx) = mpsc::unbounded_channel::<PipelineEvent>();
-    let pipeline = TranscriptionPipeline::new(config, event_tx);
+    let pipeline = TranscriptionPipeline::new(config, event_tx, None);
 
     let buf = AudioRingBuffer::new(10);
     let consumer = buf.consumer();

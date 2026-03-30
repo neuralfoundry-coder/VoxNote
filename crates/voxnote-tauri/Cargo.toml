@@ -7,7 +7,7 @@ license.workspace = true
 description = "VoxNote desktop/mobile application (Tauri 2)"
 
 [dependencies]
-voxnote-core = { workspace = true, features = ["stt", "desktop"] }
+voxnote-core = { workspace = true, features = ["stt", "desktop", "cloud-providers", "llm"] }
 tauri = { workspace = true, features = ["tray-icon"] }
 tauri-plugin-global-shortcut = { workspace = true }
 tauri-plugin-shell = { workspace = true }

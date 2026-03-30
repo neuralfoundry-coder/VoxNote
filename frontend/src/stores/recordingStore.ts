@@ -36,7 +36,7 @@ export const useRecordingStore = create<RecordingStoreState>((set) => ({
 
   stopRecording: async () => {
     await tauriInvoke<string>("stop_recording");
-    set({ state: "stopped" });
+    set({ state: "idle" });
   },
 
   pauseRecording: async () => {

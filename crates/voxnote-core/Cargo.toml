@@ -11,12 +11,12 @@ default = ["stt", "desktop"]
 
 # AI 기능
 stt = ["dep:whisper-rs"]
-llm = []
+llm = ["dep:llama-cpp-2"]
 tts = ["dep:ort"]
 diarize = ["dep:ort"]
 
 # GPU 가속
-metal = ["whisper-rs?/metal"]
+metal = ["whisper-rs?/metal", "llama-cpp-2?/metal"]
 cuda = ["whisper-rs?/cuda"]
 vulkan = []
 
@@ -73,6 +73,9 @@ whisper-rs = { workspace = true, optional = true }
 
 # ONNX Runtime (feature-gated: tts, diarize)
 ort = { workspace = true, optional = true }
+
+# LLM (feature-gated)
+llama-cpp-2 = { workspace = true, optional = true }
 
 # CRDT (feature-gated)
 yrs = { workspace = true, optional = true }

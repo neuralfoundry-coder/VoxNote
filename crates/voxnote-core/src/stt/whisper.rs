@@ -15,7 +15,6 @@ pub struct LocalSttProvider {
     languages: Vec<Language>,
     initial_prompt: Mutex<String>,
     language: Mutex<Option<String>>,
-    model_path: PathBuf,
 }
 
 impl LocalSttProvider {
@@ -48,7 +47,6 @@ impl LocalSttProvider {
             languages,
             initial_prompt: Mutex::new(String::new()),
             language: Mutex::new(None),
-            model_path,
         })
     }
 }
@@ -100,24 +98,21 @@ impl SttProvider for LocalSttProvider {
             SttError::Inference(format!("Whisper inference failed: {}", e))
         })?;
 
-        // 결과 추출
-        let num_segments = state.full_n_segments().map_err(|e| {
-            SttError::Inference(format!("Failed to get segment count: {}", e))
-        })?;
+        // 결과 추출 (whisper-rs 0.16 API)
+        let num_segments = state.full_n_segments();
 
         let mut segments = Vec::new();
         for i in 0..num_segments {
-            let text = state.full_get_segment_text(i).map_err(|e| {
+            let Some(seg) = state.get_segment(i) else {
+                continue;
+            };
+
+            let text = seg.to_str().map_err(|e| {
                 SttError::Inference(format!("Failed to get segment text: {}", e))
             })?;
 
-            let start = state.full_get_segment_t0(i).map_err(|e| {
-                SttError::Inference(format!("Failed to get segment start: {}", e))
-            })?;
-
-            let end = state.full_get_segment_t1(i).map_err(|e| {
-                SttError::Inference(format!("Failed to get segment end: {}", e))
-            })?;
+            let start = seg.start_timestamp();
+            let end = seg.end_timestamp();
 
             let trimmed = text.trim();
             if trimmed.is_empty() {
@@ -125,8 +120,8 @@ impl SttProvider for LocalSttProvider {
             }
 
             // whisper 타임스탬프는 10ms 단위 → ms로 변환 + 오프셋 적용
-            let start_ms = timestamp_offset + (start as i64 * 10);
-            let end_ms = timestamp_offset + (end as i64 * 10);
+            let start_ms = timestamp_offset + (start * 10);
+            let end_ms = timestamp_offset + (end * 10);
 
             segments.push(Segment::new(&note_id, trimmed, start_ms, end_ms));
         }
@@ -144,11 +139,11 @@ impl SttProvider for LocalSttProvider {
         &self.languages
     }
 
-    fn set_initial_prompt(&mut self, prompt: &str) {
+    fn set_initial_prompt(&self, prompt: &str) {
         *self.initial_prompt.lock().unwrap() = prompt.to_string();
     }
 
-    fn set_language(&mut self, language: Option<&str>) {
+    fn set_language(&self, language: Option<&str>) {
         *self.language.lock().unwrap() = language.map(String::from);
     }
 

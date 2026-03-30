@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useTauriEvent } from "./hooks/useTauriIPC";
 import { useNoteStore } from "./stores/noteStore";
 import { useThemeStore } from "./stores/themeStore";
 import { useViewStore, type ViewId } from "./stores/viewStore";
@@ -23,6 +24,11 @@ function App() {
   useThemeStore();
 
   useEffect(() => { fetchNotes(); }, [fetchNotes]);
+
+  // 백엔드에서 notes:updated 이벤트 수신 시 목록 자동 갱신
+  useTauriEvent("notes:updated", () => {
+    fetchNotes();
+  });
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {

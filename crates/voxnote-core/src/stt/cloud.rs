@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use reqwest::Client;
+use std::sync::Mutex;
 use tracing::debug;
 
 use super::{Language, SttProvider};
@@ -13,7 +14,7 @@ pub struct OpenAiSttProvider {
     api_key: String,
     model: String,
     languages: Vec<Language>,
-    language: Option<String>,
+    language: Mutex<Option<String>>,
 }
 
 impl OpenAiSttProvider {
@@ -28,7 +29,7 @@ impl OpenAiSttProvider {
                 Language::new("en", "English"),
                 Language::new("ja", "Japanese"),
             ],
-            language: None,
+            language: Mutex::new(None),
         }
     }
 }
@@ -54,7 +55,8 @@ impl SttProvider for OpenAiSttProvider {
                     .map_err(|e| SttError::Provider(e.to_string()))?,
             );
 
-        if let Some(ref lang) = self.language {
+        let language = self.language.lock().unwrap().clone();
+        if let Some(ref lang) = language {
             if lang != "auto" {
                 form = form.text("language", lang.clone());
             }
@@ -115,12 +117,12 @@ impl SttProvider for OpenAiSttProvider {
         &self.languages
     }
 
-    fn set_initial_prompt(&mut self, _prompt: &str) {
+    fn set_initial_prompt(&self, _prompt: &str) {
         // OpenAI Whisper API는 prompt 파라미터 지원
     }
 
-    fn set_language(&mut self, language: Option<&str>) {
-        self.language = language.map(String::from);
+    fn set_language(&self, language: Option<&str>) {
+        *self.language.lock().unwrap() = language.map(String::from);
     }
 
     fn name(&self) -> &str {

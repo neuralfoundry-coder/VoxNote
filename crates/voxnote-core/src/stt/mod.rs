@@ -47,10 +47,10 @@ pub trait SttProvider: Send + Sync {
     fn supported_languages(&self) -> &[Language];
 
     /// 문맥 연속성을 위한 initial_prompt 설정
-    fn set_initial_prompt(&mut self, prompt: &str);
+    fn set_initial_prompt(&self, prompt: &str);
 
     /// 언어 설정 (None = 자동 감지)
-    fn set_language(&mut self, language: Option<&str>);
+    fn set_language(&self, language: Option<&str>);
 
     /// Provider 이름
     fn name(&self) -> &str;
