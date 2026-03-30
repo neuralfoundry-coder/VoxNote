@@ -31,8 +31,13 @@ impl EnergyVad {
     pub fn new(threshold: f32) -> Self {
         Self {
             threshold,
-            energy_threshold: 0.01,
+            energy_threshold: 0.002,
         }
+    }
+
+    /// 에너지 기준값 설정 (기본 0.002, 낮을수록 민감)
+    pub fn set_energy_floor(&mut self, floor: f32) {
+        self.energy_threshold = floor;
     }
 }
 

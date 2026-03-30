@@ -63,8 +63,10 @@ impl TranscriptionPipeline {
         };
 
         // whisper 전사 실행 (동기 블로킹 — current_thread runtime에서 직접 호출)
+        info!("Whisper transcribe start: {:.1}s audio", chunk.duration_secs());
         match provider.transcribe(&chunk, note_id).await {
             Ok(segments) => {
+                info!("Whisper transcribe done: {} segments", segments.len());
                 // 문맥 연속성: 마지막 세그먼트 텍스트를 initial_prompt로 설정
                 if !segments.is_empty() {
                     let context: String = segments
@@ -117,7 +119,11 @@ impl TranscriptionPipeline {
             }
         };
 
-        let mut vad = EnergyVad::new(self.config.audio.vad_threshold);
+        // VAD 임계값을 낮게 설정 — 마이크 입력이 리샘플링 후 진폭이 작으므로
+        // 기본값 0.01 RMS는 너무 높음. 0.002로 낮춰 대부분의 음성이 통과하도록 함.
+        let mut vad = EnergyVad::new(0.3); // probability threshold
+        vad.set_energy_floor(0.002); // 매우 낮은 에너지도 감지
+
         let mut accumulator = Accumulator::new(
             self.config.audio.window_size_secs,
             self.config.audio.overlap_secs,
@@ -125,6 +131,7 @@ impl TranscriptionPipeline {
         );
 
         let vad_frame_size = 480; // 30ms at 16kHz
+        let mut silence_counter = 0u32; // VAD 미통과 연속 횟수
         info!(
             "Processing loop started for note {} (STT: {})",
             note_id,
@@ -166,26 +173,29 @@ impl TranscriptionPipeline {
                         continue;
                     }
 
-                    // VAD 필터링 (프레임 단위)
-                    let mut voiced_samples = Vec::new();
+                    // VAD 체크 (정보 표시용) + 모든 오디오를 accumulator에 전달
+                    // 회의 녹음에서는 VAD로 음성을 제거하면 문맥이 끊어지므로,
+                    // 모든 오디오를 STT에 전달하고 whisper가 자체적으로 무음을 처리
+                    let mut has_speech = false;
                     for frame in resampled.chunks(vad_frame_size) {
-                        if frame.len() < vad_frame_size {
-                            voiced_samples.extend_from_slice(frame);
-                        } else if vad.is_speech(frame).unwrap_or(false) {
-                            voiced_samples.extend_from_slice(frame);
+                        if frame.len() >= vad_frame_size && vad.is_speech(frame).unwrap_or(false) {
+                            has_speech = true;
+                            break;
                         }
                     }
 
-                    if voiced_samples.is_empty() {
-                        continue;
+                    if has_speech {
+                        silence_counter = 0;
+                    } else {
+                        silence_counter += 1;
                     }
 
-                    // 어큐뮬레이터 → AudioChunk 생성
-                    let chunks = accumulator.push(&voiced_samples);
+                    // 모든 리샘플링된 오디오를 accumulator에 전달
+                    let chunks = accumulator.push(&resampled);
 
                     for chunk in chunks {
-                        debug!(
-                            "Audio chunk ready: {:.1}s at {}ms",
+                        info!(
+                            "STT chunk ready: {:.1}s at {}ms — sending to whisper",
                             chunk.duration_secs(),
                             chunk.timestamp_ms
                         );
