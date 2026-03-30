@@ -55,7 +55,7 @@ echo -e " Rust 변경 = 자동 재컴파일"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
-# 0. 기존 포트 점유 프로세스 정리
+# 기존 포트 점유 프로세스 정리
 cleanup_port() {
     local port=$1
     local pids
@@ -69,25 +69,9 @@ cleanup_port() {
 
 cleanup_port 1420
 
-# 종료 시 모든 자식 프로세스 정리
-cleanup() {
-    echo ""
-    echo -e "${YELLOW} Shutting down...${NC}"
-    kill $VITE_PID 2>/dev/null
-    cleanup_port 1420
-    wait 2>/dev/null
-}
-trap cleanup EXIT INT TERM
+# 종료 시 정리
+trap 'echo ""; echo -e "${YELLOW} Shutting down...${NC}"; cleanup_port 1420; wait 2>/dev/null' EXIT INT TERM
 
-# 1. Frontend dev server 시작 (백그라운드)
-echo -e " Starting Vite dev server..."
-cd frontend && pnpm dev &
-VITE_PID=$!
-cd ..
-
-# Vite 서버 준비 대기
-sleep 2
-
-# 2. Tauri dev 실행 (Rust 자동 재컴파일)
-echo -e " Starting Tauri dev..."
+# cargo tauri dev가 Vite도 함께 시작 (tauri.conf.json의 beforeDevCommand)
+echo -e " Starting Tauri dev (frontend + backend)..."
 cargo tauri dev
