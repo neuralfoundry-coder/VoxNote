@@ -132,14 +132,20 @@ impl TranscriptionPipeline {
 
         let vad_frame_size = 480; // 30ms at 16kHz
         let mut silence_counter = 0u32; // VAD 미통과 연속 횟수
-        info!(
-            "Processing loop started for note {} (STT: {})",
-            note_id,
-            self.stt_provider
-                .as_ref()
-                .map(|p| p.name())
-                .unwrap_or("none")
-        );
+
+        // config에서 언어 설정을 STT provider에 전달
+        if let Some(ref provider) = self.stt_provider {
+            let lang = self.config.stt.language.as_deref();
+            provider.set_language(lang);
+            info!(
+                "Processing loop started for note {} (STT: {}, lang: {})",
+                note_id,
+                provider.name(),
+                lang.unwrap_or("auto")
+            );
+        } else {
+            info!("Processing loop started for note {} (STT: none)", note_id);
+        }
 
         loop {
             tokio::select! {
