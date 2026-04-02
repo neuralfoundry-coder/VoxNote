@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 export type ViewId = "notes" | "settings" | "models" | "providers" | "account" | "ask";
-export type ModalId = "export" | "device-pairing" | null;
+export type ModalId = "export" | "device-pairing" | "welcome" | null;
 
 interface ViewState {
   activeView: ViewId;

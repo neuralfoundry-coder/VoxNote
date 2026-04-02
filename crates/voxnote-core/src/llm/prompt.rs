@@ -29,7 +29,7 @@ impl PromptBuilder {
         self
     }
 
-    /// 최종 프롬프트 조합
+    /// 최종 프롬프트 조합 (플레인 텍스트)
     pub fn build(&self, transcript: &str) -> String {
         let mut parts = vec![self.system_prompt.clone()];
 
@@ -45,6 +45,38 @@ impl PromptBuilder {
         parts.push("\n## Summary\nPlease generate a structured summary:".to_string());
 
         parts.join("\n")
+    }
+
+    /// ChatML 형식 프롬프트 조합 (Qwen3.5 등 로컬 모델용)
+    ///
+    /// system/user 역할을 ChatML 토큰으로 래핑합니다.
+    pub fn build_chatml(&self, transcript: &str) -> String {
+        let system = &self.system_prompt;
+
+        let mut user_parts = Vec::new();
+
+        if let Some(ref template) = self.template_directives {
+            user_parts.push(format!("## Output Format\n{}", template));
+        }
+
+        if let Some(ref prev) = self.previous_summary {
+            user_parts.push(format!("## Previous Summary\n{}", prev));
+        }
+
+        user_parts.push(format!("## Current Transcript\n{}", transcript));
+        user_parts.push("Please generate a structured summary.".to_string());
+
+        let user = user_parts.join("\n\n");
+
+        #[cfg(feature = "llm")]
+        {
+            super::local::format_chatml(system, &user)
+        }
+        #[cfg(not(feature = "llm"))]
+        {
+            // llm feature 비활성 시 플레인 폴백
+            format!("{}\n\n{}", system, user)
+        }
     }
 }
 

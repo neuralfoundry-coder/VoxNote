@@ -28,6 +28,20 @@ pub struct ModelEntry {
     pub download_url: String,
     pub sha256: String,
     pub description: Option<String>,
+    /// LLM 모델의 컨텍스트 길이 (토큰 수)
+    pub context_length: Option<u32>,
+    /// 멀티파일 모델 번들 (ONNX 등)
+    #[serde(default)]
+    pub files: Option<Vec<ModelFile>>,
+}
+
+/// 멀티파일 모델의 개별 파일 정보
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ModelFile {
+    pub filename: String,
+    pub download_url: String,
+    pub sha256: String,
+    pub size_bytes: u64,
 }
 
 /// 모델 레지스트리 (registry.toml 전체)

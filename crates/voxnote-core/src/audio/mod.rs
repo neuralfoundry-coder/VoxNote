@@ -29,6 +29,11 @@ impl AudioChunk {
     pub fn duration_secs(&self) -> f32 {
         self.samples.len() as f32 / self.sample_rate as f32
     }
+
+    /// 청크 길이 (밀리초)
+    pub fn duration_ms(&self) -> i64 {
+        (self.samples.len() as f64 / self.sample_rate as f64 * 1000.0) as i64
+    }
 }
 
 /// 오디오 디바이스 정보

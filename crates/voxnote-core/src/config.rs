@@ -37,6 +37,10 @@ pub struct SttConfig {
     /// 사용할 STT 모델 ID
     pub model_id: Option<String>,
 
+    /// STT Provider 타입 ("whisper" | "sensevoice" | "qwen-asr")
+    #[serde(default)]
+    pub provider: Option<String>,
+
     /// 언어 설정 (None = 자동 감지)
     pub language: Option<String>,
 
@@ -96,6 +100,7 @@ impl Default for SttConfig {
     fn default() -> Self {
         Self {
             model_id: None,
+            provider: None,
             language: None,
             use_gpu: true,
             translate: false,

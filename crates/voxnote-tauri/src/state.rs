@@ -32,8 +32,15 @@ impl AppState {
         let db_path = config.data_dir().join("voxnote.db");
         let store = SqliteStore::open(&db_path)?;
 
-        // 모델 레지스트리
+        // 모델 레지스트리 (없으면 내장 기본값 생성)
         let registry_path = base_dir.join("models").join("registry.toml");
+        if !registry_path.exists() {
+            if let Some(parent) = registry_path.parent() {
+                let _ = std::fs::create_dir_all(parent);
+            }
+            let _ = std::fs::write(&registry_path, DEFAULT_REGISTRY_TOML);
+            tracing::info!("Created default model registry: {:?}", registry_path);
+        }
         let registry = ModelRegistry::load(&registry_path).ok();
 
         // STT 모델 경로만 저장 (로드는 녹음 시점에 수행)
@@ -61,22 +68,73 @@ impl AppState {
     }
 }
 
-/// STT Provider 로드 (직접 로드 — whisper-rs 0.16은 호환 문제 해결됨)
-pub fn load_stt_provider(model_path: &std::path::Path) -> Option<Arc<dyn SttProvider>> {
-    let metadata = std::fs::metadata(model_path).ok()?;
-    if metadata.len() < 1_000_000 {
-        tracing::error!("STT model too small ({} bytes): {:?}", metadata.len(), model_path);
-        return None;
-    }
+/// STT Provider 로드 (provider 타입에 따라 분기)
+///
+/// - `"whisper"` → whisper.cpp (단일 .bin 파일)
+/// - `"sensevoice"` → SenseVoice ONNX (디렉토리: model.onnx + tokens.txt + am.mvn)
+/// - `"qwen-asr"` → Qwen3-ASR ONNX (디렉토리: encoder.onnx + decoder_*.onnx + vocab.json)
+pub fn load_stt_provider(
+    model_path: &std::path::Path,
+    provider_type: &str,
+) -> Option<Arc<dyn SttProvider>> {
+    tracing::info!("Loading STT provider: type={}, path={:?}", provider_type, model_path);
 
-    tracing::info!("Loading STT model: {:?} ({:.1} MB)", model_path, metadata.len() as f64 / 1_048_576.0);
-    match voxnote_core::stt::whisper::LocalSttProvider::new(model_path.to_path_buf()) {
-        Ok(provider) => {
-            tracing::info!("STT model loaded successfully");
-            Some(Arc::new(provider) as Arc<dyn SttProvider>)
+    match provider_type {
+        "whisper" | "" => {
+            // 기존 whisper.cpp 로드
+            let metadata = std::fs::metadata(model_path).ok()?;
+            if metadata.len() < 1_000_000 {
+                tracing::error!("STT model too small ({} bytes): {:?}", metadata.len(), model_path);
+                return None;
+            }
+            tracing::info!("Loading Whisper model: {:?} ({:.1} MB)", model_path, metadata.len() as f64 / 1_048_576.0);
+            match voxnote_core::stt::whisper::LocalSttProvider::new(model_path.to_path_buf()) {
+                Ok(provider) => {
+                    tracing::info!("Whisper STT model loaded successfully");
+                    Some(Arc::new(provider) as Arc<dyn SttProvider>)
+                }
+                Err(e) => {
+                    tracing::error!("Failed to load Whisper model: {}", e);
+                    None
+                }
+            }
         }
-        Err(e) => {
-            tracing::error!("Failed to load STT model: {}", e);
+        #[cfg(feature = "stt-onnx")]
+        "sensevoice" => {
+            if !model_path.is_dir() {
+                tracing::error!("SenseVoice requires a model directory: {:?}", model_path);
+                return None;
+            }
+            match voxnote_core::stt::sensevoice::SenseVoiceSttProvider::new(model_path) {
+                Ok(provider) => {
+                    tracing::info!("SenseVoice STT model loaded successfully");
+                    Some(Arc::new(provider) as Arc<dyn SttProvider>)
+                }
+                Err(e) => {
+                    tracing::error!("Failed to load SenseVoice model: {}", e);
+                    None
+                }
+            }
+        }
+        #[cfg(feature = "stt-onnx")]
+        "qwen-asr" => {
+            if !model_path.is_dir() {
+                tracing::error!("Qwen-ASR requires a model directory: {:?}", model_path);
+                return None;
+            }
+            match voxnote_core::stt::qwen_asr::QwenAsrSttProvider::new(model_path) {
+                Ok(provider) => {
+                    tracing::info!("Qwen-ASR STT model loaded successfully");
+                    Some(Arc::new(provider) as Arc<dyn SttProvider>)
+                }
+                Err(e) => {
+                    tracing::error!("Failed to load Qwen-ASR model: {}", e);
+                    None
+                }
+            }
+        }
+        _ => {
+            tracing::warn!("Unknown STT provider type: {}", provider_type);
             None
         }
     }
@@ -125,7 +183,10 @@ fn init_provider_registry(store: &SqliteStore) -> ProviderRegistry {
                 }
             }
             "stt" => {
-                tracing::info!("Active STT provider config: {}", config.provider);
+                tracing::info!(
+                    "Active STT provider config: {} (model_id={:?}) — will be loaded on recording start",
+                    config.provider, config.model_id,
+                );
             }
             _ => {}
         }
@@ -151,7 +212,11 @@ pub fn create_llm_provider(
     match provider_name {
         "llama-local" => {
             let model_path = model_id.map(std::path::PathBuf::from)?;
-            match voxnote_core::llm::local::LocalLlmProvider::new(model_path, 4096, 99) {
+            // config_json에서 context_length를 읽거나 기본값 16384 사용
+            let context_length = endpoint
+                .and_then(|e| e.parse::<usize>().ok())
+                .unwrap_or(16384);
+            match voxnote_core::llm::local::LocalLlmProvider::new(model_path, context_length, 99) {
                 Ok(p) => Some(Arc::new(p)),
                 Err(e) => {
                     tracing::error!("Failed to create local LLM provider: {}", e);
@@ -183,25 +248,41 @@ pub fn create_llm_provider(
     }
 }
 
-/// models 디렉토리에서 첫 번째 STT 모델 파일 탐색
+/// models 디렉토리에서 첫 번째 STT 모델 파일/디렉토리 탐색
+///
+/// 우선순위: Whisper GGML > SenseVoice ONNX > Qwen-ASR ONNX > 아무 .bin 파일
 fn find_stt_model(models_dir: &std::path::Path) -> Option<PathBuf> {
     if !models_dir.exists() {
         return None;
     }
 
-    let patterns = [
+    // 1. Whisper GGML 파일
+    let whisper_patterns = [
         "ggml-tiny.bin",
         "ggml-base.bin",
         "ggml-small.bin",
         "ggml-large-v3-turbo-q5_0.bin",
     ];
-    for name in &patterns {
+    for name in &whisper_patterns {
         let path = models_dir.join(name);
         if path.exists() {
             return Some(path);
         }
     }
 
+    // 2. SenseVoice ONNX 디렉토리
+    let sensevoice_dir = models_dir.join("sensevoice-small-int8");
+    if sensevoice_dir.is_dir() {
+        return Some(sensevoice_dir);
+    }
+
+    // 3. Qwen-ASR ONNX 디렉토리
+    let qwen_asr_dir = models_dir.join("qwen3-asr-0.6b-onnx");
+    if qwen_asr_dir.is_dir() {
+        return Some(qwen_asr_dir);
+    }
+
+    // 4. 아무 .bin 파일 (Whisper 호환 가정)
     if let Ok(entries) = std::fs::read_dir(models_dir) {
         for entry in entries.flatten() {
             let path = entry.path();
@@ -213,3 +294,26 @@ fn find_stt_model(models_dir: &std::path::Path) -> Option<PathBuf> {
 
     None
 }
+
+/// 모델 경로에서 STT provider 타입 추론
+pub fn infer_stt_provider_type(model_path: &std::path::Path) -> &'static str {
+    if model_path.is_dir() {
+        // 디렉토리 이름 또는 내용으로 판별
+        let dir_name = model_path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("");
+
+        if dir_name.contains("sensevoice") || model_path.join("tokens.txt").exists() {
+            return "sensevoice";
+        }
+        if dir_name.contains("qwen") || model_path.join("encoder.onnx").exists() {
+            return "qwen-asr";
+        }
+    }
+    // 기본: whisper
+    "whisper"
+}
+
+/// 내장 기본 모델 레지스트리 (앱 첫 실행 시 ~/.voxnote/models/registry.toml에 생성)
+const DEFAULT_REGISTRY_TOML: &str = include_str!("../../../models/registry.toml");

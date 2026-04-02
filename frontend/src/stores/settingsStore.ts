@@ -20,6 +20,7 @@ const defaultConfig: AppConfig = {
   },
   stt: {
     model_id: null,
+    provider: null,
     language: null,
     use_gpu: true,
     translate: false,

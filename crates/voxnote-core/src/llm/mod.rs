@@ -11,6 +11,10 @@ pub mod cloud;
 pub mod prompt;
 pub mod templates;
 
+// Re-export post-processing utilities
+#[cfg(feature = "llm")]
+pub use local::{format_chatml, strip_think_tags};
+
 /// LLM 생성 설정
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct GenerateConfig {

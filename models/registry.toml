@@ -55,7 +55,95 @@ download_url = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-l
 sha256 = "placeholder-sha256-large-v3-turbo"
 description = "최고 정확도 Whisper 모델. GPU 권장."
 
-# ── LLM Models (Phase 2 활용) ──────────────────────────────────
+# ── STT Models (ONNX Runtime) ──────────────────────────────────
+
+[[model]]
+id = "sensevoice-small-int8"
+name = "SenseVoiceSmall (INT8)"
+type = "stt"
+size_bytes = 239550000
+languages = ["auto", "ko", "en", "ja", "zh", "yue"]
+min_ram_mb = 1024
+gpu_recommended = false
+download_url = ""
+sha256 = ""
+description = "초고속 Non-autoregressive STT. 단일 forward pass (10초 음성 ~70ms). CMVN 내장."
+
+[[model.files]]
+filename = "model.int8.onnx"
+download_url = "https://huggingface.co/csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/resolve/main/model.int8.onnx"
+sha256 = "placeholder-sha256-sensevoice-model"
+size_bytes = 239233841
+
+[[model.files]]
+filename = "tokens.txt"
+download_url = "https://huggingface.co/csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/resolve/main/tokens.txt"
+sha256 = "placeholder-sha256-sensevoice-tokens"
+size_bytes = 315894
+
+[[model]]
+id = "qwen3-asr-0.6b-onnx"
+name = "Qwen3-ASR 0.6B (ONNX INT4)"
+type = "stt"
+size_bytes = 2020000000
+languages = ["auto", "ko", "en", "ja", "zh", "es", "fr", "de"]
+min_ram_mb = 3072
+gpu_recommended = true
+download_url = ""
+sha256 = ""
+description = "고정밀 encoder-decoder ASR (WER 3.48%). INT4 양자화 (~2GB). Autoregressive 디코딩."
+
+[[model.files]]
+filename = "encoder.onnx"
+download_url = "https://huggingface.co/andrewleech/qwen3-asr-0.6b-onnx/resolve/main/encoder.onnx"
+sha256 = "placeholder-sha256-qwen-encoder"
+size_bytes = 745762694
+
+[[model.files]]
+filename = "decoder_init.onnx"
+download_url = "https://huggingface.co/andrewleech/qwen3-asr-0.6b-onnx/resolve/main/decoder_init.int4.onnx"
+sha256 = "placeholder-sha256-qwen-decoder-init"
+size_bytes = 355390
+
+[[model.files]]
+filename = "decoder_step.onnx"
+download_url = "https://huggingface.co/andrewleech/qwen3-asr-0.6b-onnx/resolve/main/decoder_step.int4.onnx"
+sha256 = "placeholder-sha256-qwen-decoder-step"
+size_bytes = 354888
+
+[[model.files]]
+filename = "decoder_weights.int4.data"
+download_url = "https://huggingface.co/andrewleech/qwen3-asr-0.6b-onnx/resolve/main/decoder_weights.int4.data"
+sha256 = "placeholder-sha256-qwen-decoder-weights"
+size_bytes = 962460672
+
+[[model.files]]
+filename = "embed_tokens.bin"
+download_url = "https://huggingface.co/andrewleech/qwen3-asr-0.6b-onnx/resolve/main/embed_tokens.bin"
+sha256 = "placeholder-sha256-qwen-embed"
+size_bytes = 311164928
+
+[[model.files]]
+filename = "vocab.json"
+download_url = "https://huggingface.co/andrewleech/qwen3-asr-0.6b-onnx/resolve/main/vocab.json"
+sha256 = "placeholder-sha256-qwen-vocab"
+size_bytes = 2776833
+
+# ── LLM Models ─────────────────────────────────────────────────
+
+[[model]]
+id = "qwen3.5-0.8b-q8"
+name = "Qwen 3.5 0.8B (Q8_0)"
+type = "llm"
+size_bytes = 851443712
+quantization = "Q8_0"
+languages = ["ko", "en", "ja", "zh"]
+min_ram_mb = 1536
+gpu_recommended = false
+context_length = 16384
+download_url = "https://huggingface.co/Jackrong/Qwen3.5-0.8B-Claude-4.6-Opus-Reasoning-Distilled-GGUF/resolve/main/Qwen3.5-0.8B.Q8_0.gguf"
+sha256 = "placeholder-sha256-qwen35-0.8b"
+description = "경량 sLLM. 추론 증류 모델. CPU에서도 빠르게 동작. 회의록 요약용."
 
 [[model]]
 id = "qwen2.5-7b-q4km"
@@ -66,6 +154,7 @@ quantization = "Q4_K_M"
 languages = ["ko", "en", "ja", "zh"]
 min_ram_mb = 8192
 gpu_recommended = true
+context_length = 32768
 download_url = "https://huggingface.co/Qwen/Qwen2.5-7B-Instruct-GGUF/resolve/main/qwen2.5-7b-instruct-q4_k_m.gguf"
 sha256 = "placeholder-sha256-qwen25-7b"
 description = "다국어 지원 7B LLM. 회의록 요약에 최적화 가능."
@@ -79,6 +168,7 @@ quantization = "Q4_K_M"
 languages = ["ko", "en", "ja", "zh"]
 min_ram_mb = 2048
 gpu_recommended = false
+context_length = 32768
 download_url = "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf"
 sha256 = "placeholder-sha256-qwen25-1.5b"
 description = "경량 LLM. 모바일 및 CPU 환경용."

@@ -187,6 +187,9 @@ impl LocalLlmProvider {
             result.push_str(&piece);
         }
 
+        // <think>...</think> 추론 트레이스 제거 (Qwen3.5 등 reasoning 모델)
+        let result = strip_think_tags(&result);
+
         debug!(
             "LocalLLM: generated {} tokens, text_len={}",
             output_tokens.len(),
@@ -216,5 +219,83 @@ impl LlmProvider for LocalLlmProvider {
 
     fn name(&self) -> &str {
         "llama-local"
+    }
+}
+
+/// `<think>...</think>` 추론 트레이스를 제거합니다.
+///
+/// Qwen3.5 등 reasoning-distilled 모델이 생성하는 CoT 블록을
+/// 최종 응답에서 제거합니다. 중첩 태그는 가장 바깥 쌍만 제거합니다.
+pub fn strip_think_tags(text: &str) -> String {
+    let mut result = String::with_capacity(text.len());
+    let mut remaining = text;
+
+    while let Some(start) = remaining.find("<think>") {
+        // <think> 앞의 텍스트 보존
+        result.push_str(&remaining[..start]);
+
+        // 대응하는 </think> 찾기
+        if let Some(end) = remaining[start..].find("</think>") {
+            remaining = &remaining[start + end + "</think>".len()..];
+        } else {
+            // 닫힘 태그 없음 → 이후 전체가 think 블록으로 간주
+            remaining = "";
+            break;
+        }
+    }
+
+    result.push_str(remaining);
+    result.trim().to_string()
+}
+
+/// ChatML 형식으로 프롬프트를 래핑합니다.
+///
+/// `<|im_start|>system\n{system}<|im_end|>\n<|im_start|>user\n{user}<|im_end|>\n<|im_start|>assistant\n`
+pub fn format_chatml(system: &str, user: &str) -> String {
+    format!(
+        "<|im_start|>system\n{system}<|im_end|>\n<|im_start|>user\n{user}<|im_end|>\n<|im_start|>assistant\n"
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_strip_think_tags_basic() {
+        let input = "<think>reasoning here</think>Final answer";
+        assert_eq!(strip_think_tags(input), "Final answer");
+    }
+
+    #[test]
+    fn test_strip_think_tags_multiline() {
+        let input = "<think>\nStep 1: ...\nStep 2: ...\n</think>\nThe result is 42.";
+        assert_eq!(strip_think_tags(input), "The result is 42.");
+    }
+
+    #[test]
+    fn test_strip_think_tags_no_tags() {
+        let input = "No reasoning here.";
+        assert_eq!(strip_think_tags(input), "No reasoning here.");
+    }
+
+    #[test]
+    fn test_strip_think_tags_unclosed() {
+        let input = "<think>unclosed reasoning";
+        assert_eq!(strip_think_tags(input), "");
+    }
+
+    #[test]
+    fn test_strip_think_tags_multiple() {
+        let input = "<think>first</think>Hello <think>second</think>World";
+        assert_eq!(strip_think_tags(input), "Hello World");
+    }
+
+    #[test]
+    fn test_format_chatml() {
+        let result = format_chatml("You are helpful.", "What is 2+2?");
+        assert!(result.starts_with("<|im_start|>system\nYou are helpful.<|im_end|>"));
+        assert!(result.contains("<|im_start|>user\nWhat is 2+2?<|im_end|>"));
+        assert!(result.ends_with("<|im_start|>assistant\n"));
     }
 }

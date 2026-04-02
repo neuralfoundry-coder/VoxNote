@@ -7,6 +7,15 @@ use crate::models::Segment;
 #[cfg(feature = "stt")]
 pub mod whisper;
 
+#[cfg(feature = "stt-onnx")]
+pub mod sensevoice;
+
+#[cfg(feature = "stt-onnx")]
+pub mod qwen_asr;
+
+#[cfg(feature = "stt-onnx")]
+mod features;
+
 #[cfg(feature = "cloud-providers")]
 pub mod cloud;
 

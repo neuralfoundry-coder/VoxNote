@@ -6,6 +6,10 @@ rust-version.workspace = true
 license.workspace = true
 description = "VoxNote desktop/mobile application (Tauri 2)"
 
+[features]
+default = ["stt-onnx"]
+stt-onnx = ["voxnote-core/stt-onnx"]
+
 [dependencies]
 voxnote-core = { workspace = true, features = ["stt", "desktop", "cloud-providers", "llm"] }
 tauri = { workspace = true, features = ["tray-icon"] }

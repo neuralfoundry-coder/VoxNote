@@ -150,14 +150,16 @@ async fn run_recording_pipeline(
         let mut guard = stt_provider_cache.lock().unwrap_or_else(|e| e.into_inner());
         if guard.is_none() {
             if let Some(ref path) = stt_model_path {
-                *guard = crate::state::load_stt_provider(path);
+                let provider_type = config.stt.provider.as_deref()
+                    .unwrap_or_else(|| crate::state::infer_stt_provider_type(path));
+                *guard = crate::state::load_stt_provider(path, provider_type);
             }
         }
         guard.clone()
     };
 
-    if stt_provider.is_some() {
-        tracing::info!("Recording with STT provider: whisper-local");
+    if let Some(ref p) = stt_provider {
+        tracing::info!("Recording with STT provider: {}", p.name());
     } else {
         tracing::warn!("No STT provider — recording without transcription");
     }

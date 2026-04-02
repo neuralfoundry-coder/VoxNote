@@ -34,6 +34,8 @@ pub fn run() {
             commands::model::list_models,
             commands::model::download_model,
             commands::model::delete_model,
+            commands::model::activate_model,
+            commands::model::test_model,
             // Settings
             commands::settings::get_settings,
             commands::settings::update_settings,

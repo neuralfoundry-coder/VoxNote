@@ -47,7 +47,7 @@ describe("settingsStore", () => {
   it("should update settings", async () => {
     const config = {
       audio: { input_device: null, sample_rate: 48000, vad_threshold: 0.7, window_size_secs: 2.0, overlap_secs: 0.5 },
-      stt: { model_id: null, language: null, use_gpu: false, translate: false },
+      stt: { model_id: null, provider: null, language: null, use_gpu: false, translate: false },
       storage: { data_dir: null, encryption_enabled: false },
       model: { models_dir: null, max_cache_mb: 5120 },
     };

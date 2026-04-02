@@ -1,8 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useTauriEvent } from "./hooks/useTauriIPC";
 import { useNoteStore } from "./stores/noteStore";
 import { useThemeStore } from "./stores/themeStore";
 import { useViewStore, type ViewId } from "./stores/viewStore";
+import { useModelStore, useNeedsSetup } from "./stores/modelStore";
 import { Sidebar } from "./components/Sidebar/NoteList";
 import { NoteEditor } from "./components/Editor/NoteEditor";
 import { RecorderBar } from "./components/Recorder/RecorderBar";
@@ -13,6 +14,8 @@ import { ProviderSettings } from "./components/Settings/ProviderSettings";
 import { AccountSettings } from "./components/Settings/AccountSettings";
 import { ChatPanel } from "./components/AskVoxNote/ChatPanel";
 import { ExportDialog } from "./components/Export/ExportDialog";
+import { SetupGuideDialog } from "./components/Setup/SetupGuideDialog";
+import { ModelRecommendationBanner } from "./components/Setup/ModelRecommendationBanner";
 import { ToastContainer } from "./components/Toast/ToastContainer";
 
 function App() {
@@ -21,9 +24,24 @@ function App() {
   const activeModal = useViewStore((s) => s.activeModal);
   const modalProps = useViewStore((s) => s.modalProps);
   const closeModal = useViewStore((s) => s.closeModal);
+  const openModal = useViewStore((s) => s.openModal);
+  const fetchModels = useModelStore((s) => s.fetchModels);
+  const modelsLoading = useModelStore((s) => s.isLoading);
+  const needsSetup = useNeedsSetup();
+  const setupChecked = useRef(false);
   useThemeStore();
 
   useEffect(() => { fetchNotes(); }, [fetchNotes]);
+  useEffect(() => { fetchModels(); }, [fetchModels]);
+
+  // 첫 실행: STT 모델 미설치 시 Welcome Dialog 표시
+  useEffect(() => {
+    if (modelsLoading || setupChecked.current) return;
+    setupChecked.current = true;
+    if (needsSetup && !localStorage.getItem("voxnote_setup_dismissed")) {
+      openModal("welcome");
+    }
+  }, [modelsLoading, needsSetup, openModal]);
 
   // 백엔드에서 notes:updated 이벤트 수신 시 목록 자동 갱신
   useTauriEvent("notes:updated", () => {
@@ -62,6 +80,7 @@ function App() {
       </div>
 
       {activeModal === "export" && <ExportDialog noteId={modalProps.noteId as string} onClose={closeModal} />}
+      {activeModal === "welcome" && <SetupGuideDialog onClose={closeModal} />}
       <ToastContainer />
     </div>
   );
@@ -73,7 +92,10 @@ function ViewRenderer({ view }: { view: ViewId }) {
     case "notes":
       return (
         <>
-          <div className="flex-1 overflow-auto"><NoteEditor /></div>
+          <div className="flex-1 overflow-auto">
+            <ModelRecommendationBanner />
+            <NoteEditor />
+          </div>
           {activeNote && <div className="w-[300px] shrink-0 border-l overflow-auto" style={{ borderColor: "var(--vn-border)" }}><SummaryPanel /></div>}
         </>
       );

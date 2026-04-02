@@ -39,7 +39,7 @@ describe("TypeScript type contracts", () => {
   it("AppConfig should have default-compatible structure", () => {
     const config: AppConfig = {
       audio: { input_device: null, sample_rate: 48000, vad_threshold: 0.5, window_size_secs: 3.0, overlap_secs: 0.5 },
-      stt: { model_id: null, language: null, use_gpu: true, translate: false },
+      stt: { model_id: null, provider: null, language: null, use_gpu: true, translate: false },
       storage: { data_dir: null, encryption_enabled: true },
       model: { models_dir: null, max_cache_mb: 10240 },
     };

@@ -83,18 +83,49 @@ pub async fn set_provider_config(
         .map_err(|e| e.to_string())?;
 
     // Provider Registry 업데이트
-    if config.is_active && config.engine_type == "llm" {
-        if let Ok(mut registry) = state.provider_registry.lock() {
-            let api_key = config.api_key.as_deref().unwrap_or("");
-            if let Some(provider) = crate::state::create_llm_provider(
-                &config.provider,
-                api_key,
-                row.model_id.as_deref(),
-                config.endpoint.as_deref(),
-            ) {
-                registry.register_llm(&config.provider, provider);
-                registry.set_active_llm(&config.provider);
+    if config.is_active {
+        match config.engine_type.as_str() {
+            "llm" => {
+                if let Ok(mut registry) = state.provider_registry.lock() {
+                    let api_key = config.api_key.as_deref().unwrap_or("");
+                    if let Some(provider) = crate::state::create_llm_provider(
+                        &config.provider,
+                        api_key,
+                        row.model_id.as_deref(),
+                        config.endpoint.as_deref(),
+                    ) {
+                        registry.register_llm(&config.provider, provider);
+                        registry.set_active_llm(&config.provider);
+                    }
+                }
             }
+            "stt" => {
+                // STT provider 전환: 모델 경로 업데이트 + 캐시 무효화
+                if let Some(ref model_id) = row.model_id {
+                    let cfg = state.config.lock().map_err(|e| e.to_string())?;
+                    let model_path = cfg.models_dir().join(model_id);
+
+                    // provider 타입 결정
+                    let provider_type = match config.provider.as_str() {
+                        "sensevoice-local" => "sensevoice",
+                        "qwen-asr-local" => "qwen-asr",
+                        _ => "whisper",
+                    };
+
+                    // 모델 경로 업데이트
+                    if let Ok(mut path_guard) = state.stt_model_path.lock() {
+                        *path_guard = Some(model_path);
+                    }
+
+                    // STT provider 캐시 무효화 (다음 녹음 시 재로드)
+                    if let Ok(mut provider_guard) = state.stt_provider.lock() {
+                        *provider_guard = None;
+                    }
+
+                    tracing::info!("STT provider switched to: {} (model: {})", provider_type, model_id);
+                }
+            }
+            _ => {}
         }
     }
 
@@ -154,7 +185,16 @@ pub async fn test_provider(
 pub async fn list_available_providers() -> Result<Vec<String>, String> {
     let mut providers = vec!["whisper-local".to_string()];
 
+    // ONNX STT providers (feature-gated)
+    #[cfg(feature = "stt-onnx")]
+    {
+        providers.push("sensevoice-local".to_string());
+        providers.push("qwen-asr-local".to_string());
+    }
+
+    // Cloud LLM providers
     providers.extend([
+        "llama-local".to_string(),
         "openai".to_string(),
         "anthropic".to_string(),
         "gemini".to_string(),

@@ -50,6 +50,7 @@ export interface ModelInfo {
   model_type: string;
   size_display: string;
   is_downloaded: boolean;
+  is_active: boolean;
   gpu_recommended: boolean;
   description: string | null;
 }
@@ -59,6 +60,12 @@ export interface DownloadProgress {
   downloaded_bytes: number;
   total_bytes: number;
   percentage: number;
+}
+
+export interface ModelTestResult {
+  success: boolean;
+  output: string;
+  duration_ms: number;
 }
 
 export interface RecordingResponse {
@@ -79,6 +86,7 @@ export interface AppConfig {
   };
   stt: {
     model_id: string | null;
+    provider: string | null;
     language: string | null;
     use_gpu: boolean;
     translate: boolean;
